@@ -401,14 +401,19 @@
         let timeLeft = 30;
 
         function addToCart(name, price) {
-            
-            cart.push({name, price}); 
-            total += price; 
-            updateUI(); 
+   
+    const existingItem = cart.find(item => item.name === name);
 
-           
-            showOrderTimer();
-        }
+    if (existingItem) {
+        existingItem.quantity += 1;
+    } else {
+        cart.push({ name, price, quantity: 1 });
+    }
+
+    total += price;
+    updateUI();
+    showOrderTimer(); 
+}
 
         function showOrderTimer() {
             const modal = document.getElementById('order-timer-modal');
@@ -437,7 +442,7 @@
             }, 1000);
         }
 
-        // নতুন কাস্টম পপআপ ফাংশন
+       
 function showCustomPopup(message, type = 'alert', onConfirm = null) {
     const modal = document.getElementById('custom-popup');
     const msgElem = document.getElementById('popup-message');
@@ -472,7 +477,7 @@ function closePopup() {
     
     if (cart.length > 0) {
         cart.pop();
-        total = 0; // যদি একাধিক আইটেম থাকে তবে লজিক অনুযায়ী আপডেট করবেন
+        total = 0; 
         updateUI();
         showCustomPopup("Item removed from your cart.");
     }
@@ -490,25 +495,60 @@ function cancelFullOrder() {
 
 }
         function updateUI() {
-            const deliveryCharge = parseInt(document.querySelector('input[name="location"]:checked').value);
-            const grandTotal = total + deliveryCharge;
+    const deliveryCharge = parseInt(document.querySelector('input[name="location"]:checked').value);
+    const grandTotal = total + deliveryCharge;
 
-            document.getElementById('cart-count').innerText = cart.length;
-            
-            
-            let listHTML = cart.length === 0 ? "No items" : 
-                cart.map(i => `<div class="flex justify-between"><span>${i.name}</span><span>৳${i.price.toLocaleString()}</span></div>`).join('');
-            
-            if(cart.length > 0) {
-                listHTML += `<div class="flex justify-between border-t border-white/5 pt-2 mt-2 text-white italic">
-                                <span>Delivery Charge</span>
-                                <span>৳${deliveryCharge}</span>
-                             </div>`;
-            }
-            
-            document.getElementById('checkout-list').innerHTML = listHTML;
-            document.getElementById('checkout-total').innerText = "৳" + grandTotal.toLocaleString();
+    document.getElementById('cart-count').innerText = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+    let listHTML = cart.length === 0 ? "No items" : 
+        cart.map((item, index) => `
+            <div class="flex justify-between items-center mb-4 bg-white/5 p-3 rounded-xl">
+                <div class="flex flex-col">
+                    <span class="font-bold text-sm">${item.name}</span>
+                    <span class="text-xs text-gray-400">৳${item.price.toLocaleString()}</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button onclick="changeQuantity(${index}, -1)" class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center hover:bg-red-500/20 transition">-</button>
+                    
+                    <span class="font-bold text-[#00D4FF]">${item.quantity}</span>
+                    
+                    <button onclick="changeQuantity(${index}, 1)" class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center hover:bg-green-500/20 transition">+</button>
+                </div>
+            </div>
+        `).join('');
+
+    if(cart.length > 0) {
+        listHTML += `
+            <div class="flex justify-between border-t border-white/10 pt-4 mt-2 italic text-gray-400">
+                <span>Delivery Charge</span>
+                <span>৳${deliveryCharge}</span>
+            </div>`;
+    }
+
+    document.getElementById('checkout-list').innerHTML = listHTML;
+    document.getElementById('checkout-total').innerText = "৳" + grandTotal.toLocaleString();
+}
+function changeQuantity(index, delta) {
+    const item = cart[index];
+    
+    if (delta === 1) {
+       
+        item.quantity += 1;
+        total += item.price;
+    } else {
+        
+        if (item.quantity > 1) {
+            item.quantity -= 1;
+            total -= item.price;
+        } else {
+           
+            total -= item.price;
+            cart.splice(index, 1);
         }
+    }
+    
+    updateUI();
+}
 
         function processOrder() {
             const name = document.getElementById('cust-name').value;
@@ -529,7 +569,8 @@ function cancelFullOrder() {
                 alert("Please provide Transaction ID!"); return;
             }
 
-            const itemsText = cart.map((i, idx) => `${idx + 1}. ${i.name}`).join('\n');
+            
+            const itemsText = cart.map((i, idx) => `${idx + 1}. ${i.name} [x${i.quantity}] - ৳${(i.price * i.quantity).toLocaleString()}`).join('\n');
             
             const message = `🚀 *NEW ORDER* 🚀\n` +
                             `👤 *Name:* ${name}\n` +
