@@ -274,6 +274,13 @@
                         </label>
                     </div>
                 </div>
+                <label class="relative cursor-pointer group">
+    <input type="radio" name="pay-method" value="COD" class="hidden peer">
+    <div class="peer-checked:border-[#00D4FF] peer-checked:bg-[#00D4FF]/10 border border-white/5 p-4 rounded-2xl flex flex-col items-center gap-2 transition duration-300 bg-white/5">
+        <i data-lucide="truck" class="h-8 w-8 text-gray-400 peer-checked:text-[#00D4FF] group-hover:text-[#00D4FF] transition"></i>
+        <span class="text-[10px] font-bold uppercase tracking-widest">Cash on Delivery</span>
+    </div>
+</label>
 
                 <div class="mt-4 p-5 bg-gradient-to-br from-white/5 to-transparent rounded-2xl border border-white/10">
                     <div class="flex items-center justify-between mb-2">
@@ -550,46 +557,46 @@ function changeQuantity(index, delta) {
     updateUI();
 }
 
-        function processOrder() {
-            const name = document.getElementById('cust-name').value;
-            const phone = document.getElementById('cust-phone').value;
-            const addr = document.getElementById('cust-addr').value;
-            const txnId = document.getElementById('cust-txnid').value;
-            const method = document.querySelector('input[name="pay-method"]:checked').value;
-            
-           
-            const deliveryCharge = parseInt(document.querySelector('input[name="location"]:checked').value);
-            const locationType = deliveryCharge === 60 ? "Inside Chittagong" : "Outside Chittagong";
-            const grandTotal = total + deliveryCharge;
+   function processOrder() {
+    const name = document.getElementById('cust-name').value;
+    const phone = document.getElementById('cust-phone').value;
+    const addr = document.getElementById('cust-addr').value;
+    const txnId = document.getElementById('cust-txnid')?.value || "N/A";
+    const method = document.querySelector('input[name="pay-method"]:checked').value;
+    
+    const deliveryCharge = parseInt(document.querySelector('input[name="location"]:checked').value);
+    const grandTotal = total + deliveryCharge;
 
-            if(!name || !phone || !addr || cart.length === 0) {
-                alert("Please fill all details!"); return;
-            }
-            if(!txnId) {
-                alert("Please provide Transaction ID!"); return;
-            }
+    if(!name || !phone || !addr || cart.length === 0) {
+        showCustomPopup("Please fill all details!"); 
+        return;
+    }
 
-            
-            const itemsText = cart.map((i, idx) => `${idx + 1}. ${i.name} [x${i.quantity}] - ৳${(i.price * i.quantity).toLocaleString()}`).join('\n');
-            
-            const message = `🚀 *NEW ORDER* 🚀\n` +
-                            `👤 *Name:* ${name}\n` +
-                            `📞 *Phone:* ${phone}\n` +
-                            `📍 *Address:* ${addr}\n` +
-                            `🚚 *Location:* ${locationType}\n` +
-                            `--------------------------\n` +
-                            `💳 *Payment:* ${method}\n` +
-                            `🆔 *Txn ID:* ${txnId}\n` +
-                            `--------------------------\n` +
-                            `🛒 *Items:* \n${itemsText}\n` +
-                            `--------------------------\n` +
-                            `💵 *Product Total:* ৳${total.toLocaleString()}\n` +
-                            `🚚 *Delivery:* ৳${deliveryCharge}\n` +
-                            `💰 *Grand Total:* ৳${grandTotal.toLocaleString()}\n\n` +
-                            `✅ Please confirm the order.`;
+    // পেমেন্ট মেথড যদি বিকাশ বা নগদ হয়, তবেই TxnID বাধ্যতামূলক
+    if(method !== "COD" && (txnId === "N/A" || !txnId)) {
+        showCustomPopup(`Please provide Transaction ID for ${method} payment!`);
+        return;
+    }
 
-            window.open(`https://wa.me/8801700000000?text=${encodeURIComponent(message)}`, '_blank');
-        }
+    const itemsText = cart.map((i, idx) => `${idx + 1}. ${i.name} [x${i.quantity}]`).join('\n');
+    
+    const message = `🚀 *NEW ORDER RECEIVED* 🚀\n` +
+                    `👤 *Name:* ${name}\n` +
+                    `📞 *Phone:* ${phone}\n` +
+                    `📍 *Address:* ${addr}\n` +
+                    `--------------------------\n` +
+                    `💳 *Payment Method:* ${method}\n` +
+                    (method !== "COD" ? `🆔 *Txn ID:* ${txnId}\n` : `📝 *Note:* Pay on Delivery\n`) +
+                    `--------------------------\n` +
+                    `🛒 *Items:* \n${itemsText}\n` +
+                    `--------------------------\n` +
+                    `💵 *Product Total:* ৳${total.toLocaleString()}\n` +
+                    `🚚 *Delivery Charge:* ৳${deliveryCharge}\n` +
+                    `💰 *Grand Total:* ৳${grandTotal.toLocaleString()}\n\n` +
+                    `✅ Order confirmation requested.`;
+
+    window.open(`https://wa.me/8801700000000?text=${encodeURIComponent(message)}`, '_blank');
+}
        // Typing text animation
         const typingTextElement = document.getElementById('typing-text');
         const phrases = [
@@ -631,6 +638,16 @@ function changeQuantity(index, delta) {
             displayProducts();
             typeWriter(); // Start typing animation
         };
+        document.querySelectorAll('input[name="pay-method"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        const txnInputContainer = document.getElementById('cust-txnid').parentElement;
+        if (this.value === "COD") {
+            txnInputContainer.style.display = "none"; 
+        } else {
+            txnInputContainer.style.display = "block"; 
+        }
+    });
+});
     </script>
     <div id="custom-popup" class="hidden fixed inset-0 z-[5000] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
     <div class="glass p-8 rounded-[2rem] text-center max-w-sm w-full border border-white/10 shadow-2xl">
@@ -642,3 +659,4 @@ function changeQuantity(index, delta) {
 </div>
 </body>
 </html>
+
